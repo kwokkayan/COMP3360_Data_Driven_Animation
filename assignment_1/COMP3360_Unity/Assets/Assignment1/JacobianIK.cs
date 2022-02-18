@@ -34,6 +34,13 @@ public class JacobianIK : MonoBehaviour {
 
 	public void SolveByJacobian() {
   		bones = GetChain(IKRoot, IKTip);
+		// new code
+		Debug.Log("start");
+		foreach (Transform t in bones)
+        {
+			Debug.Log(t.gameObject);
+        }
+		Debug.Log("end");
 		Matrix4x4[] posture = GetPosture();
 		float[] solution = new float[3*bones.Length];
 		DoF = bones.Length * 3;

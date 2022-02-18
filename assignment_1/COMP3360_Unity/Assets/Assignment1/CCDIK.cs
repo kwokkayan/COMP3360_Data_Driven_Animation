@@ -5,7 +5,8 @@ public class CCDIK : MonoBehaviour {
     public Transform IKRoot = null;
     public Transform IKTip = null;
     public Transform IKTarget = null;
-
+    [Range(0f, 10f)] public float power = 2.0f;
+    public int iterations = 50;
     void Start() {
         SetToZeroPose(this.transform.Find("Root"));
     }
@@ -15,6 +16,7 @@ public class CCDIK : MonoBehaviour {
             Debug.Log("Some inspector variable has not been assigned and is still null.");
             return;
         }
+        //SetToZeroPose(this.transform.Find("Root"));
         SolveByCCD(IKRoot, IKTip, IKTarget);
     }
 
@@ -26,22 +28,27 @@ public class CCDIK : MonoBehaviour {
             Debug.Log("Given root and tip are not valid.");
             return;
         }
-
+        /*Debug.Log("start");
+        foreach (Transform t in chain)
+        {
+            Debug.Log(t.gameObject);
+        }
+        Debug.Log("end");*/
         //############################################################
         //Your implementation goes here
         //############################################################
-        int iterations = 50;
+        //int iterations = 50;
         bool solveRotation = true;
         bool solvePosition = true;
+        float distance = Vector3.Distance(tip.position, target.position);
         for(int i=0; i<iterations; i++) {
-            for(int j=0; j<chain.Length; j++) {
-
+            for (int j=0; j<chain.Length; j++) {
                 //Subtask 2: Heuristic IK Weight Computation
-                float weight = (float)(j+1) / (float)chain.Length;
+                // float weight = (float)(j+1) / (float)chain.Length;
                 // float weight = Mathf.Pow((float)(j+1) / (float)chain.Length, 2f);
-                // float weight = Mathf.Sqrt((float)(j+1) / (float)chain.Length);
-                // float weight = 1f;
-
+                // float weight = Mathf.Sqrt((float)(j + 1) / (float)chain.Length);
+                // float weight = 0f;
+                float weight = Mathf.Pow((float)(j+1) / (float)chain.Length, power);
                 //Subtask 1: Solve Tip Position
                 /*
                 Tips:
@@ -51,14 +58,17 @@ public class CCDIK : MonoBehaviour {
                 4. Creates a rotation(Quaternion) which rotates from fromDirection to toDirection : Quaternion.FromToRotation(Vector3 fromDirection, Vector3 toDirection);
                 5. Rotate the jth joint on the chain by a Rotation R (in quaternion): chain[j].rotation = R * chain[j].rotation rotations
                 */
-               
-				if(solvePosition) {
-					chain[j].rotation = Quaternion.Slerp(
+                if (distance <= 0.005) return; // quit condition
+                if (solvePosition) {
+                    Vector3 from = tip.position - chain[j].position;
+                    Vector3 to = target.position - chain[j].position;
+                    chain[j].rotation = Quaternion.Slerp(
 						chain[j].rotation,
-						Quaternion.FromToRotation(tip.position - chain[j].position, target.position - chain[j].position) * chain[j].rotation,
+                        Quaternion.FromToRotation(from, to) * chain[j].rotation,
 						weight
 					);
-				}
+                    distance = Vector3.Distance(tip.position, target.position);
+                }
             }
         }
         //############################################################
