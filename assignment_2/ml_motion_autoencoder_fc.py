@@ -130,6 +130,7 @@ if __name__ == '__main__':
     
     if torch.cuda.is_available():
         model.cuda()
+        print("cuda is available!")
 
     for epoch_idx in range(epoch):
         print_freq = len(train_dataloader) // 10

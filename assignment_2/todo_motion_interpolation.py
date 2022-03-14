@@ -1,6 +1,8 @@
+
 import subprocess
 import numpy as np
-
+from scipy.spatial.transform import Rotation, RotationSpline
+from scipy.interpolate import CubicSpline
 from utils import *
 
 '''
@@ -11,7 +13,7 @@ Calculate the joint position by the hierarchical structure and joint rotation
 * Any rotation library is allowed to use, like scipy
 * You can add parameters with your own design
 '''
-def apply_interpolation(data, keyframes, interpolation_method):
+def apply_interpolation(data, keyframes, interpolation_method, is_rotation=True):
     data_filled = data.copy()
     if interpolation_method == 'linear':
         start_idx = keyframes[0]
@@ -25,17 +27,34 @@ def apply_interpolation(data, keyframes, interpolation_method):
             #     data_filled[start_idx + times] = start_data + base_incrementation*times
             start_idx = end_idx
     elif interpolation_method == 'bezier':
-        
-        print
-    elif interpolation_method == 'bspline':
-
-        print 
+        pass
+    elif interpolation_method == 'bspline': # cubic spline
+        # if is_rotation:
+        #     start_idx = keyframes[0]
+        #     for end_idx in keyframes[1:]:
+        #         times = [0, end_idx - start_idx]
+        #         angles = [np.roll(data[start_idx], -1), np.roll(data[end_idx], -1)]
+        #         rotations = Rotation.from_quat(angles)
+        #         spline = RotationSpline(times, rotations)
+        #         for times in range(1, end_idx - start_idx):
+        #             data_filled[start_idx + times] = np.roll(spline(times).as_quat(), 1)
+        #         start_idx = end_idx
+        # else:
+        # Original
+        start_idx = keyframes[0]
+        for end_idx in keyframes[1:]:
+            times = [0, end_idx - start_idx]
+            pos = [data[start_idx], data[end_idx]]
+            spline = CubicSpline(times, pos)
+            for times in range(1, end_idx - start_idx):
+                data_filled[start_idx + times] = spline(times)
+            start_idx = end_idx
     else:
         raise NotImplementedError('No support interpolation way %s' % interpolation_method)
     return data_filled
 
 
-OFFSET = 120
+OFFSET = 24
 bvh_file_path = './data/motion_walking.bvh'
 rotations, positions, offsets, parents, names, frametime = load(filename=bvh_file_path)
 rotations_fake, positions_fake = np.zeros_like(rotations.qs), np.zeros_like(positions)
@@ -48,12 +67,17 @@ positions_fake[keyframes] = positions[keyframes]
 for joint_index in range(rotations.shape[1]):
     rotations_fake[:, joint_index, :] = apply_interpolation(rotations_fake[:, joint_index], 
                                                             keyframes=keyframes, 
-                                                            interpolation_method='linear')
+                                                            interpolation_method='bspline')
+    print("finished joint", joint_index)
 positions_fake[:, 0, :] = apply_interpolation(positions_fake[:, 0], 
                                                             keyframes=keyframes,
-                                                            interpolation_method='linear')
+                                                            interpolation_method='bspline',
+                                                            is_rotation=False)
 
 output_file_path = '%s_interpolate_%s.bvh' % (bvh_file_path[:-4], OFFSET)
 save(output_file_path, Quaternions(rotations_fake).normalized(), positions_fake, offsets, parents, names, frametime)
+error_rotation = np.sum((rotations_fake - rotations.qs)**2, axis=-1).mean()
+error_position = (positions_fake[:, 0, :] - positions[:, 0, :]).mean()
+print("error log: rotation =", error_rotation, "position =", error_position)
 subprocess.call('blender -P load_bvhs.py -- -r %s -c %s' % (bvh_file_path, output_file_path), shell=True)
 # subprocess.call('blender -P load_bvhs.py -- -r %s -c %s --render' % (bvh_file_path, output_file_path), shell=True)
