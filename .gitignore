@@ -40,3 +40,4 @@ sysinfo.txt
 *valid*.bvh
 *interpolate*.bvh
 *concat*.bvh
+*.pyc
