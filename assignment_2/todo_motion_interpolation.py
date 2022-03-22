@@ -5,11 +5,11 @@ from scipy.interpolate import CubicSpline, Akima1DInterpolator, interp1d
 from utils import *
 
 '''
-Your implement here: Implement more interpolation algorithms
+Your implement here: Implement more interpolation algorithms on motion interpolation task
 To-Do:
-Calculate the joint position by the hierarchical structure and joint rotation 
-* The rotation on parent joint will impact all child joint
-* Any rotation library is allowed to use, like scipy
+Complete the apply_interpolation function with two interpolation algorithms
+* Students are encouraged to use existing libraries for this, like SciPy
+* Not necessarily Bezier, such as nearest, nearest-up, slinear, quadratic which can be chosen
 * You can add parameters with your own design
 '''
 def apply_interpolation(data, keyframes, interpolation_method, is_rotation=True):
