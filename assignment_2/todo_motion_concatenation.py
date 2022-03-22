@@ -1,6 +1,6 @@
 import subprocess
 import numpy as np
-
+from scipy.interpolate import CubicSpline, Akima1DInterpolator
 from utils import *
 
 '''
@@ -24,15 +24,24 @@ def apply_interpolation(data, keyframes, interpolation_method):
             # for times in range(0, end_idx - start_idx):
             #     data_filled[start_idx + times] = start_data + base_incrementation*times
             start_idx = end_idx
-    elif interpolation_method == 'bezier':
-        
-        print
-    elif interpolation_method == 'bspline':
-
-        print 
-    elif interpolation_method == 'slerp':
-
-        print
+    elif interpolation_method == 'akima':
+        start_idx = keyframes[0]
+        for end_idx in keyframes[1:]:
+            times = [0, end_idx - start_idx]
+            pos = [data[start_idx], data[end_idx]]
+            spline = Akima1DInterpolator(times, pos)
+            for times in range(1, end_idx - start_idx):
+                data_filled[start_idx + times] = spline(times)
+            start_idx = end_idx
+    elif interpolation_method == 'cubicspline':
+        start_idx = keyframes[0]
+        for end_idx in keyframes[1:]:
+            times = [0, end_idx - start_idx]
+            pos = [data[start_idx], data[end_idx]]
+            spline = CubicSpline(times, pos)
+            for times in range(1, end_idx - start_idx):
+                data_filled[start_idx + times] = spline(times)
+            start_idx = end_idx 
     else:
         raise NotImplementedError('No support interpolation way %s' % interpolation_method)
     return data_filled
@@ -58,14 +67,14 @@ betweening_rotation[-1] = rotation_clip2[0]
 for joint_index in range(rotations1.shape[1]):
     betweening_rotation[:, joint_index, :] = apply_interpolation(betweening_rotation[:, joint_index], 
                                                             keyframes=[0, betweening_number-1], 
-                                                            interpolation_method='linear')
+                                                            interpolation_method='cubicspline')
 
 betweening_position = np.zeros((betweening_number, rotation_clip1.shape[1], 3))
 betweening_position[0] = position_clip1[-1]
 betweening_position[-1] = position_clip2[0]
 betweening_position[:, 0, :] = apply_interpolation(betweening_position[:, 0], 
                                                             keyframes=[0, betweening_number-1],
-                                                            interpolation_method='linear')
+                                                            interpolation_method='cubicspline')
 
 output_file_path = './data/walking_concat_basket.bvh'
 

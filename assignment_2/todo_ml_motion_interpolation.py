@@ -19,11 +19,28 @@ model_rotation_type = 'q'
 class MotionInterpolationModel(nn.Module):
     def __init__(self, input_feature_size):
         super(MotionInterpolationModel, self).__init__()
-        
-    
+        self.encoder = nn.Sequential(
+            nn.Conv1d(in_channels=input_feature_size, out_channels=128, kernel_size=5, stride=1),
+            nn.BatchNorm1d(128), nn.ReLU(True), 
+            nn.Conv1d(in_channels=128, out_channels=256, kernel_size=2, stride=1),
+            nn.BatchNorm1d(256), nn.ReLU(True),
+            nn.Conv1d(in_channels=256, out_channels=512, kernel_size=2, stride=1),
+            nn.BatchNorm1d(512), nn.ReLU(True), 
+        )
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose1d(in_channels=512, out_channels=256, kernel_size=2, stride=1),
+            nn.BatchNorm1d(256), nn.ReLU(True), 
+            nn.ConvTranspose1d(in_channels=256, out_channels=128, kernel_size=2, stride=1),
+            nn.BatchNorm1d(128), nn.ReLU(True), 
+            nn.ConvTranspose1d(in_channels=128, out_channels=input_feature_size, kernel_size=5, stride=1),
+            nn.ReLU(True), 
+        )
+        self.out_conv = nn.Conv1d(in_channels=input_feature_size, out_channels=input_feature_size, kernel_size=1)
+
     def forward(self, x):
-        
-        return 
+        latent = self.encoder(x)
+        reconstrcution = self.out_conv(self.decoder(latent))
+        return latent, reconstrcution
 
 
 class MotionDataset(Dataset):
@@ -124,10 +141,10 @@ if __name__ == '__main__':
             batch_input:  [batch_size, joint_number*rotation_values, model_clip_size] -> 128, 31*4, 15
             batch_target:  [batch_size, joint_number*rotation_values, model_clip_size] -> 128, 31*4, 15
             '''
-            # batch_rotations_reshape = batch_rotations.reshape((batch_rotations.shape[0], batch_rotations.shape[1], -1)).transpose(1, 2)
-            # batch_input = torch.zeros((batch_rotations.shape[0], test_dataset.__get_feature_number__(), model_clip_size))
-            # batch_input[:, keyframes] = batch_rotations_reshape[:, keyframes]
-            # batch_target = batch_rotations_reshape
+            batch_rotations_reshape = batch_rotations.reshape((batch_rotations.shape[0], batch_rotations.shape[1], -1)).transpose(1, 2)
+            batch_input = torch.zeros((batch_rotations.shape[0], test_dataset.__get_feature_number__(), model_clip_size))
+            batch_input[:, keyframes] = batch_rotations_reshape[:, keyframes]
+            batch_target = batch_rotations_reshape
 
             '''
             Example 2: use keyframes as input 
@@ -156,5 +173,52 @@ if __name__ == '__main__':
                 batch_input, batch_target = batch_input.cuda(), batch_target.cuda()
             
             ### Your implementation here
-            print
+            deep_latent, output = model(batch_input)
+            loss = torch.nn.MSELoss()(output, batch_target)
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            if batch_idx % print_freq == 0:
+                print('Training: Epoch %d, (%s/%s) the reconstuction loss is %04f' % (epoch_idx, batch_idx, len(train_dataloader), loss.item()))
+
+        model.eval()
+        errors = []
+        for batch_idx, (batch_rotations, _, batch_root_positions, file_name) in enumerate(test_dataloader):   
+            batch_input = batch_rotations.reshape((batch_rotations.shape[0], batch_rotations.shape[1], -1)).transpose(1, 2)
+            batch_target = batch_rotations.reshape((batch_rotations.shape[0], batch_rotations.shape[1], -1)).transpose(1, 2)
+            if torch.cuda.is_available():
+                batch_input, batch_target = batch_input.cuda(), batch_target.cuda()
+            deep_latent, output = model(batch_input)
+            errors.append(torch.norm(output - batch_target).item())
+        print('##### Evaluation for Epoch %d, the reconstuction error is %04f' % (epoch_idx, np.mean(errors)))
+
+    model.eval()
+    real_rotations, real_root_positions, outputs, file_names = [], [], [], []
+    for batch_idx, (batch_rotations, _, batch_root_positions, file_name) in enumerate(test_dataloader):   
+        batch_input = batch_rotations.reshape((batch_rotations.shape[0], batch_rotations.shape[1], -1)).transpose(1, 2)
+        if torch.cuda.is_available():
+            batch_input = batch_input.cuda()
+        deep_latent, output = model(batch_input)
+        outputs.append(output.transpose(1, 2).cpu().detach().numpy() if torch.cuda.is_available() else output.detach().numpy())
+        real_rotations.append(batch_input.transpose(1, 2).cpu().detach().numpy() if torch.cuda.is_available() else batch_input.detach().numpy())
+        real_root_positions.append(batch_root_positions.cpu().detach().numpy() if torch.cuda.is_available() else batch_root_positions.detach().numpy())
+        file_names += file_name*model_clip_size
+
+    pre_rotations = np.concatenate(outputs, axis=0).reshape((-1, joint_number, rotation_number))
+    real_rotations = np.concatenate(real_rotations, axis=0).reshape((-1, joint_number, rotation_number))
+    real_root_positions = np.concatenate(real_root_positions, axis=0).reshape((-1, 3))
+    file_names_set = set(file_names)
+    pre_rotations[:, 0] = real_rotations[:, 0]
+    outdir = './output/interpolate_conv1d_OFFSET_' + str(OFFSET)
+    os.mkdir(outdir) if not os.path.exists(outdir) else None
+    for file_name in file_names_set:
+        frame_indices = np.where(np.array(file_names)==file_name)[0]
+        frame_number = frame_indices.shape[0]
+        pre_rotation = Quaternions(pre_rotations[frame_indices]) if model_rotation_type == 'q' else Quaternions.from_euler(pre_rotations[frame_indices], order='zyx')
+        real_rotation = Quaternions(real_rotations[frame_indices]) if model_rotation_type == 'q' else Quaternions.from_euler(real_rotations[frame_indices], order='zyx')
+        positions = np.zeros((frame_number, joint_number, 3))
+        positions[:, 0] = real_root_positions[frame_indices]
+        save(outdir + '/gt_%s' % file_name, real_rotation.normalized(), positions, train_dataset.offsets, train_dataset.parents, train_dataset.names, train_dataset.frametime*4)
+        save(outdir + '/rec_%s' % file_name, pre_rotation.normalized(), positions, train_dataset.offsets, train_dataset.parents, train_dataset.names, train_dataset.frametime*4)
 
