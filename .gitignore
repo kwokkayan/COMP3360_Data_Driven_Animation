@@ -41,3 +41,6 @@ sysinfo.txt
 *interpolate*.bvh
 *concat*.bvh
 *.pyc
+*.pdf
+*.docx
+*.rar
