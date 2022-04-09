@@ -27,8 +27,6 @@ All the materials have been uploaded: [subfolder](./assignment_1)
 * An IK solver in Unity (30%)
 * Report (10%)
 
-
-
 ## Assignment 2 - Data-Driven Character Animation
 
 This assignment will teach you how to observe motion data and process it with different tools like the mathematics interpolation algorithm and AutoEncoder model. Given a motion clip shaped with (T, J, R), understanding the difference between temporal and spatial dimensions will be the key to processing it. You will practice it by following tasks.
@@ -52,8 +50,9 @@ All the materials have been uploaded: [subfolder](./assignment_2)
 
 IMPORTANT NOTES ABOUT TUTORIAL 1 AND TUTORIAL 2: 
 * For those of you having issues on Windows due to CMake and GLFW, please use the project template that is provided [here](https://github.com/chitalu/glfw-project). Follow the instructions in the corresponding readme file to build the code, which creates a simple window with a green background.
-* Once you have setup the template, you can then copy the main.cpp file that was provided for the tutorial (1 or 2) you are working on. Do not copy the remaining files that are provided in the original tutorial 1 and 2 templates. (also dont copy the extern/ directory).
+* Once you have setup the template, you can then copy the `main.cpp` and `.obj` files that were provided for the tutorial (1 or 2) you are working on. Do not copy the remaining files that are provided in the original tutorial 1 and 2 templates. (also dont copy the extern/ directory).
 * Follow the usual instructions to generate the Visual Studio files (i.e. `mkdir build`, `cd build` and then `cmake ..`). The generated files will be in the created build directory.
+* If you get build errors, it is likely that you need to rename the following two variables names `near` and `far` to `near_plane` and `far_plane` (there is a clash of variable names with one of the Windows system header files). 
 
 ### Tutorial 1 - Rigid body dynamics
 
@@ -71,11 +70,37 @@ All the materials to help you get started have been uploaded to the folder [pba_
 
 The tutorial slides can be found [[here](./pba_tutorial2_cloth.pdf)]. 
 
-## Assignment 3 - TBA
+### Tutorial 3 - FEM deformation dynamics
 
+This tutorial will teach you how to implement volumetric deformation using FEM in C++. 
 
+All the materials to help you get started have been uploaded to the folder [pba_tutorial3_fem](./pba_tutorial3_fem). 
 
+The tutorial slides can be found [here](./pba_tutorial3_fem.pdf) 
 
+Here are two examples of the expected output:
 
+![output1](./pba_tutorial3_fem/expected-output1.png)
 
-Pls, contact myshi@cs.hku.hk if there is any question.
+![output2](./pba_tutorial3_fem/expected-output2.png)
+
+### :warning: Assignment 3 : Hyperelastic deformation
+
+In this assignment, you will work with the C++ programming language to learn about implementing
+different hyperelastic material models and numerical integration schemes that you encountered during the lectures.
+
+The final assignment should be submitted as a .zip file which contains only the source files of your
+project. Do not include pre-compiled binaries (!) unless deemed absolutely necessary. For non-coding tasks,
+please submit additional files that contain your answers.
+
+This assignment is in essence a direct extension of Tutorial 3 (FEM deformation dynamics), all software-related codes will uploaded to the folder [pba_tutorial3_fem](./pba_tutorial3_fem).
+
+#### Deadline
+
+The deadline for this assignment is 22 April 2022
+
+#### Instructions
+
+Refer to the document [here](./assignment_3/instructions.pdf) for detailed instructions about this assignment. 
+
+Pls, contact myshi@cs.hku.hk or chitalu@hku.hk if there is any question.
