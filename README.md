@@ -50,6 +50,11 @@ All the materials have been uploaded: [subfolder](./assignment_2)
 
 ## Physics-based animation tutorials
 
+IMPORTANT NOTES ABOUT TUTORIAL 1 AND TUTORIAL 2: 
+* For those of you having issues on Windows due to CMake and GLFW, please use the project template that is provided [here](https://github.com/chitalu/glfw-project). Follow the instructions in the corresponding readme file to build the code, which creates a simple window with a green background.
+* Once you have setup the template, you can then copy the main.cpp file that was provided for the tutorial (1 or 2) you are working on. Do not copy the remaining files that are provided in the original tutorial 1 and 2 templates. (also dont copy the extern/ directory).
+* Follow the usual instructions to generate the Visual Studio files (i.e. `mkdir build`, `cd build` and then `cmake ..`). The generated files will be in the created build directory.
+
 ### Tutorial 1 - Rigid body dynamics
 
 This tutorial will teach you how to implement a basic rigid body dynamics solver in C++. 
@@ -64,7 +69,7 @@ This tutorial will teach you how to implement a basic cloth simulator in C++.
 
 All the materials to help you get started have been uploaded to the folder [pba_tutorial2_cloth](./pba_tutorial2_cloth). Start by reading the README.md file in that directory.
 
-The tutorial slides can be found [here])(./pba_tutorial2_cloth.pdf) 
+The tutorial slides can be found [[here](./pba_tutorial2_cloth.pdf)]. 
 
 ## Assignment 3 - TBA
 
