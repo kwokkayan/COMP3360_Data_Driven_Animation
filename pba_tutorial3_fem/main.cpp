@@ -71,7 +71,6 @@ int mat_model = MaterialModel::LINEAR;
 int int_model = IntegrationModel::VERLET;
 struct finite_element_t
 {
-    // ... TODO
     float undeformed_volume;
     glm::mat3 reference_shape_matrix_inverse;
 };
@@ -79,8 +78,7 @@ struct finite_element_t
 struct node_t
 {
     glm::vec3 pos; // current position
-    // TODO ...
-    glm::vec3 old_pos; // used in verlet integration 
+    glm::vec3 old_pos; // used in verlet and trapazoidal integration 
     glm::vec3 force;
     glm::vec3 velocity;
     glm::vec3 next_velocity; // used in trapazoidal integration
@@ -136,9 +134,9 @@ void init_physical_object(simulation_mesh_t &sm)
         // e.g start by uncommenting the following line and then run the code.
         //
         node.pos = sm.tetmesh.vertices[i];
-	node.mass = 1.0f;
-	node.old_pos = node.pos;
-	node.velocity = vec3(0.0f);
+	    node.mass = 1.0f;
+	    node.old_pos = node.pos;
+	    node.velocity = vec3(0.0f);
         sm.nodes.push_back(node);
 
         //
@@ -189,13 +187,13 @@ void init_physical_object(simulation_mesh_t &sm)
         const std::vector<int> &tet = sm.tetmesh.tetrahedra;
         const vec3 &Xi = sm.nodes[tet[base_index + 0]].pos;
         const vec3 &Xj = sm.nodes[tet[base_index + 1]].pos;
-	const vec3 &Xk = sm.nodes[tet[base_index + 2]].pos;
-	const vec3 &Xl = sm.nodes[tet[base_index + 3]].pos;
+	    const vec3 &Xk = sm.nodes[tet[base_index + 2]].pos;
+	    const vec3 &Xl = sm.nodes[tet[base_index + 3]].pos;
 
-	mat3 reference_shape_matrix(Xi - Xl, Xj - Xl, Xk - Xl); 
-	e.reference_shape_matrix_inverse = inverse(reference_shape_matrix);
-	e.undeformed_volume = determinant(reference_shape_matrix) / 6;
-	sim_mesh.finite_elements.push_back(e);
+        mat3 reference_shape_matrix(Xi - Xl, Xj - Xl, Xk - Xl); 
+        e.reference_shape_matrix_inverse = inverse(reference_shape_matrix);
+        e.undeformed_volume = determinant(reference_shape_matrix) / 6;
+        sim_mesh.finite_elements.push_back(e);
     } // for (int i = 0; i < element_count; ++i) {
 }
 // This function calculates the force via finite elements methods
@@ -226,44 +224,44 @@ void update_force()
 
         const std::vector<int> &tet = sim_mesh.tetmesh.tetrahedra;
         const glm::vec3 &xi = sim_mesh.nodes[tet[base_index + 0]].pos;
-	const glm::vec3 &xj = sim_mesh.nodes[tet[base_index + 1]].pos;
+	    const glm::vec3 &xj = sim_mesh.nodes[tet[base_index + 1]].pos;
         const glm::vec3 &xk = sim_mesh.nodes[tet[base_index + 2]].pos;
         const glm::vec3 &xl = sim_mesh.nodes[tet[base_index + 3]].pos;
 	
         glm::mat3 P(1.0); // Piola-Kirchhoff stress tensor
-	glm::mat3 F(1.0); // Deformation gradient
-	glm::mat3 deformed_shape_matrix(xi - xl, xj - xl, xk - xl);
-	F = deformed_shape_matrix * e.reference_shape_matrix_inverse;
-	glm::mat3 I(1.0); // Identity matrix
+        glm::mat3 F(1.0); // Deformation gradient
+        glm::mat3 deformed_shape_matrix(xi - xl, xj - xl, xk - xl);
+        F = deformed_shape_matrix * e.reference_shape_matrix_inverse;
+        glm::mat3 I(1.0); // Identity matrix
         int model = mat_model;
         switch (model)
         {
-        case MaterialModel::LINEAR: {
-	  P = mu * (F + glm::transpose(F) - 2.0f * I) + lambda * trace(F - I) * I;
-	}
-        break;
-	case MaterialModel::ST_VK: { // St. Venant-Kirchhoff model
-	  glm::mat3 E(1.0); // Green strain tensor
-	  E = (glm::transpose(F) * F - I) * 0.5f;
-	  P = F * (2.0f * mu * E + lambda * trace(E) * I); 
-	}
-	break;
-	case MaterialModel::COROTATIONAL: { // Corotational linear model
-	  glm::mat3 R(1.0f);
-	  glm::mat3 S(1.0f);
-	  polar_decomposition(F, R, S);
-	  P = 2.0f * mu * (F - R) + lambda * trace(glm::transpose(R) * F - I) * R;
-	}
-	break;
-	case MaterialModel::NEO: { // Neohookean elasticity model
-	  glm::mat3 temp = glm::transpose(F) * F; //F^T * F
-	  float I3 = glm::determinant(temp); // det(F^T * F)
-	  glm::mat3 FinverseT = glm::transpose(glm::inverse(F)); // (F^-1)^T
-	  P = mu * F - mu * FinverseT + lambda * 0.5f * glm::log(I3) * FinverseT;
-	}
-	break;
-        default:
+            case MaterialModel::LINEAR: { // Linear model
+                P = mu * (F + glm::transpose(F) - 2.0f * I) + lambda * trace(F - I) * I;
+            }
             break;
+            case MaterialModel::ST_VK: { // St. Venant-Kirchhoff model
+                glm::mat3 E(1.0); // Green strain tensor
+                E = (glm::transpose(F) * F - I) * 0.5f;
+                P = F * (2.0f * mu * E + lambda * trace(E) * I); 
+            }
+            break;
+            case MaterialModel::COROTATIONAL: { // Corotational linear model
+                glm::mat3 R(1.0f);
+                glm::mat3 S(1.0f);
+                polar_decomposition(F, R, S);
+                P = 2.0f * mu * (F - R) + lambda * trace(glm::transpose(R) * F - I) * R;
+            }
+            break;
+            case MaterialModel::NEO: { // Neohookean elasticity model
+                glm::mat3 temp = glm::transpose(F) * F; //F^T * F
+                float I3 = glm::determinant(temp); // det(F^T * F)
+                glm::mat3 FinverseT = glm::transpose(glm::inverse(F)); // (F^-1)^T
+                P = mu * F - mu * FinverseT + lambda * 0.5f * glm::log(I3) * FinverseT;
+            }
+            break;
+            default:
+                break;
         }
 	// update forces
 	glm::mat3 H(1.0);
@@ -295,26 +293,28 @@ void update_physics(float dt)
             //
             // TODO: update free vertex positions (DOFs) using numerical integration here
             // 
-	    switch (model) {
-	        case IntegrationModel::VERLET: {
-		    glm::vec3 new_pos = node.pos + node.pos - node.old_pos + node.force / node.mass * dt * dt;
-		    node.old_pos = node.pos;
-		    node.pos = new_pos;
-	        }
-	        break;
-	        case IntegrationModel::EULER: {
-  		    node.velocity = node.velocity + node.force / node.mass * dt;
-		    node.pos = node.pos + node.velocity * dt;
-		}
-	        break;
-	        case IntegrationModel::TRAPAZOIDAL: {
-		    node.velocity = node.velocity + node.force / node.mass * dt; // v(x, t) 
-		    node.old_pos = node.pos; // x(t)
-		    node.pos = node.pos + node.velocity * dt; // x(t) + dt * v(x, t)
-		}
-	        break;
-	    }
-	    // Example verlet integration:
+            switch (model) {
+                case IntegrationModel::VERLET: {
+                    glm::vec3 new_pos = node.pos + node.pos - node.old_pos + node.force / node.mass * dt * dt;
+                    node.old_pos = node.pos;
+                    node.pos = new_pos;
+                }
+                break;
+                case IntegrationModel::EULER: {
+                    node.velocity = node.velocity + node.force / node.mass * dt;
+                    node.pos = node.pos + node.velocity * dt;
+                }
+                break;
+                case IntegrationModel::TRAPAZOIDAL: {
+                    node.velocity = node.velocity + node.force / node.mass * dt; // v(x, t) 
+                    node.old_pos = node.pos; // x(t)
+                    node.pos = node.pos + node.velocity * dt; // x(t) + dt * v(x, t)
+                }
+                break;
+                default:
+                break;
+            }
+	        // Example verlet integration:
             // x(t + dt)    = 2x(t) - x(t - dt) + ddx(t)dt^2
             //              = x(t) + [x(t)  - x(t - dt)] + (f(t)/m)dt^2
         }
@@ -352,19 +352,17 @@ void update_physics(float dt)
             // Numerical integration of free DOF nodes                                                                        
             bool is_fixed = std::find(fixed_nodes.begin(), fixed_nodes.end(), i) != fixed_nodes.end();
 
-            bool is_pulled_and_pushed_node = std::find(pulled_and_pushed_nodes.begin(), pulled_and_pushed_n\
-odes.end(), i) !=
-                                         pulled_and_pushed_nodes.end();
+            bool is_pulled_and_pushed_node = std::find(pulled_and_pushed_nodes.begin(), pulled_and_pushed_nodes.end(), i) != pulled_and_pushed_nodes.end();
 
             bool is_free_dof = !is_fixed && !is_pulled_and_pushed_node;
             if (is_free_dof) {
-	        // v(x + dt * v(x, t),t)
-	        node.next_velocity = node.velocity + node.force / node.mass * dt;
-		// x(t) + dt/2 * (v(x(t), t) + v(x + dt * v(x, t), t))
-		node.pos = node.old_pos + dt * 0.5f * (node.velocity + node.next_velocity);
-		// (v(x(t), t) + v(x + dt * v(x, t), t))
-		node.velocity = (node.velocity + node.next_velocity) * 0.5f; 
-	    }
+                // v(x + dt * v(x, t),t)
+                node.next_velocity = node.velocity + node.force / node.mass * dt;
+                // x(t) + dt/2 * (v(x(t), t) + v(x + dt * v(x, t), t))
+                node.pos = node.old_pos + dt * 0.5f * (node.velocity + node.next_velocity);
+                // (v(x(t), t) + v(x + dt * v(x, t), t))
+                node.velocity = (node.velocity + node.next_velocity) * 0.5f; 
+            }
         }
     }
 }
@@ -450,15 +448,15 @@ int main(int argc, char *argv[])
 {
     // arg conditions 
     if (argc == 4) {
-      apply_pull_force = atoi(argv[1]);
-      mat_model = atoi(argv[2]);
-      int_model = atoi(argv[3]);
+        apply_pull_force = atoi(argv[1]);
+        mat_model = atoi(argv[2]);
+        int_model = atoi(argv[3]);
     } else {
-      std::cout << "Usage: ./fem-tutorial [apply_pull_force] [MaterialModel] [IntegrationModel]" << std::endl;
-      std::cout << "apply_pull_force: 0 for push, 1 for pull" << std::endl;
-      std::cout << "MaterialModel: 0 for LINEAR, 1 for ST_VK, 2 for COROTATIONAL, 3 For NEOHOOKEAN" << std::endl;
-      std::cout << "IntegrationModel: 0 for VERLET, 1 for EULER, 2 for TRAPAZOIDAL" << std::endl;
-      return 0;
+        std::cout << "Usage: ./fem-tutorial [apply_pull_force] [MaterialModel] [IntegrationModel]" << std::endl;
+        std::cout << "apply_pull_force: 0 for push, 1 for pull" << std::endl;
+        std::cout << "MaterialModel: 0 for LINEAR, 1 for ST_VK, 2 for COROTATIONAL, 3 For NEOHOOKEAN" << std::endl;
+        std::cout << "IntegrationModel: 0 for VERLET, 1 for EULER, 2 for TRAPAZOIDAL" << std::endl;
+        return 0;
     }
     restart_gl_log();
 
