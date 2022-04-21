@@ -1,0 +1,10 @@
+GL_LOG_FILE log. local time Fri Apr 22 01:09:59 2022
+
+renderer: llvmpipe (LLVM 12.0.0, 256 bits)
+version: 4.5 (Core Profile) Mesa 21.2.6
+creating shader from /home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/test_vs.glsl...
+shader compiled. index 1
+creating shader from /home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/test_fs.glsl...
+shader compiled. index 2
+created programme 3. attaching shaders 1 and 2...
+program 3 GL_VALIDATE_STATUS = GL_TRUE

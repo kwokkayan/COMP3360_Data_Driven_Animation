@@ -1,0 +1,9 @@
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/CMakeFiles/rebuild_cache.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/CMakeFiles/edit_cache.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/CMakeFiles/fem-tutorial.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/extern/glfw/CMakeFiles/rebuild_cache.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/extern/glfw/CMakeFiles/edit_cache.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/extern/glfw/src/CMakeFiles/rebuild_cache.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/extern/glfw/src/CMakeFiles/edit_cache.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/extern/glfw/src/CMakeFiles/glfw.dir
+/home/kwokkayan/COMP3360_Data_Driven_Animation/pba_tutorial3_fem/extern/glfw/src/CMakeFiles/update_mappings.dir

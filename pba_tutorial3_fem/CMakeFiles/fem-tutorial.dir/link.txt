@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/fem-tutorial.dir/gl_utils.cpp.o CMakeFiles/fem-tutorial.dir/glad.c.o CMakeFiles/fem-tutorial.dir/main.cpp.o CMakeFiles/fem-tutorial.dir/trimesh.cpp.o  -o fem-tutorial  -lGL extern/glfw/src/libglfw3.a -ldl -lrt -lm -ldl -lX11 -lpthread 
